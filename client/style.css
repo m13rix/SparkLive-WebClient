@@ -336,11 +336,5 @@ textarea {
 }
 
 @media (max-width: 768px) {
-    .config-panel-wrapper{
-        display: none;
-    }
-
-    .session-active-ui.active{
-        display: none;
-    }
+    
 }
