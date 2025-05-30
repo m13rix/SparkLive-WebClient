@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wolfram Alpha Integration</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Orbitron', monospace;
+            background: transparent;
+            color: #00d4ff;
+            overflow: hidden;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .wolfram-container {
+            width: 90vmin;
+            height: 90vmin;
+            max-width: 600px;
+            max-height: 600px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .status-indicator {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #333;
+            transition: all 0.3s ease;
+        }
+
+        .status-indicator.idle {
+            background: #555;
+            box-shadow: 0 0 10px rgba(85, 85, 85, 0.5);
+        }
+
+        .status-indicator.processing {
+            background: #ff6b35;
+            box-shadow: 0 0 20px rgba(255, 107, 53, 0.8);
+            animation: pulse 1.5s infinite;
+        }
+
+        .status-indicator.success {
+            background: #00ff88;
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.8);
+        }
+
+        .status-indicator.error {
+            background: #ff4757;
+            box-shadow: 0 0 20px rgba(255, 71, 87, 0.8);
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.7; }
+        }
+
+        .wolfram-logo {
+            font-size: 2.5rem;
+            font-weight: 900;
+            background: linear-gradient(45deg, #00d4ff, #ff6b35, #00ff88);
+            background-size: 300% 300%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientShift 3s ease-in-out infinite;
+            margin-bottom: 30px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .query-display {
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            font-weight: 500;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .query-display.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .loading-animation {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .loading-animation.active {
+            display: flex;
+        }
+
+        .neural-loader {
+            width: 60px;
+            height: 60px;
+            position: relative;
+        }
+
+        .neural-node {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: #00d4ff;
+            border-radius: 50%;
+            animation: neuralPulse 2s infinite;
+        }
+
+        .neural-node:nth-child(1) { top: 0; left: 50%; transform: translateX(-50%); animation-delay: 0s; }
+        .neural-node:nth-child(2) { top: 50%; right: 0; transform: translateY(-50%); animation-delay: 0.3s; }
+        .neural-node:nth-child(3) { bottom: 0; left: 50%; transform: translateX(-50%); animation-delay: 0.6s; }
+        .neural-node:nth-child(4) { top: 50%; left: 0; transform: translateY(-50%); animation-delay: 0.9s; }
+        .neural-node:nth-child(5) { top: 25%; right: 25%; animation-delay: 1.2s; }
+        .neural-node:nth-child(6) { bottom: 25%; right: 25%; animation-delay: 1.5s; }
+
+        @keyframes neuralPulse {
+            0%, 100% {
+                transform: scale(1);
+                box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+            }
+            50% {
+                transform: scale(1.5);
+                box-shadow: 0 0 20px rgba(0, 212, 255, 1);
+            }
+        }
+
+        .processing-text {
+            font-size: 1rem;
+            color: #00d4ff;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            animation: textGlow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes textGlow {
+            from { text-shadow: 0 0 5px rgba(0, 212, 255, 0.5); }
+            to { text-shadow: 0 0 15px rgba(0, 212, 255, 1); }
+        }
+
+        .result-container {
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 20px 0;
+            max-height: 300px;
+            overflow-y: auto;
+            opacity: 0;
+            transform: scale(0.9);
+            transition: all 0.5s ease;
+            backdrop-filter: blur(10px);
+            max-width: 120%;
+            overflow-x: hidden;
+        }
+
+        .result-container.visible {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .result-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .result-container::-webkit-scrollbar-track {
+            background: rgba(0, 255, 136, 0.1);
+            border-radius: 3px;
+        }
+
+        .result-container::-webkit-scrollbar-thumb {
+            background: rgba(0, 255, 136, 0.5);
+            border-radius: 3px;
+        }
+
+        .result-text {
+            font-size: 1rem;
+            line-height: 1.6;
+            color: #00ff88;
+            font-weight: 400;
+        }
+
+        .result-highlight {
+            color: #ffffff;
+            font-weight: 500;
+            background: rgba(0, 255, 136, 0.2);
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin: 0 2px;
+        }
+
+        .error-container {
+            background: rgba(255, 71, 87, 0.1);
+            border: 1px solid rgba(255, 71, 87, 0.3);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: all 0.5s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .error-container.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .error-text {
+            color: #ff4757;
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        .system-info {
+            position: absolute;
+            bottom: 20px;
+            font-size: 0.8rem;
+            color: rgba(0, 212, 255, 0.6);
+            font-weight: 400;
+        }
+
+        .data-flow {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 200px;
+            height: 200px;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .data-flow.active {
+            opacity: 1;
+            animation: dataRotate 4s linear infinite;
+        }
+
+        @keyframes dataRotate {
+            from { transform: translate(-50%, -50%) rotate(0deg); }
+            to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        .data-particle {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background: #ff6b35;
+            border-radius: 50%;
+            animation: particleOrbit 2s linear infinite;
+        }
+
+        .data-particle:nth-child(1) { top: 10px; left: 50%; animation-delay: 0s; }
+        .data-particle:nth-child(2) { top: 50%; right: 10px; animation-delay: 0.5s; }
+        .data-particle:nth-child(3) { bottom: 10px; left: 50%; animation-delay: 1s; }
+        .data-particle:nth-child(4) { top: 50%; left: 10px; animation-delay: 1.5s; }
+
+        @keyframes particleOrbit {
+            0% { box-shadow: 0 0 5px rgba(255, 107, 53, 0.8); }
+            50% { box-shadow: 0 0 15px rgba(255, 107, 53, 1); }
+            100% { box-shadow: 0 0 5px rgba(255, 107, 53, 0.8); }
+        }
+
+        @media (max-width: 768px) {
+            .wolfram-container {
+                padding: 20px;
+            }
+
+            .wolfram-logo {
+                font-size: 2rem;
+            }
+
+            .query-display, .result-container {
+                font-size: 0.9rem;
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="wolfram-container">
+    <div class="status-indicator idle" id="statusIndicator"></div>
+
+    <div class="wolfram-logo">Wolfram</div>
+
+    <div class="query-display" id="queryDisplay">
+        Ожидание запроса...
+    </div>
+
+    <div class="loading-animation" id="loadingAnimation">
+        <div class="neural-loader">
+            <div class="neural-node"></div>
+            <div class="neural-node"></div>
+            <div class="neural-node"></div>
+            <div class="neural-node"></div>
+            <div class="neural-node"></div>
+            <div class="neural-node"></div>
+        </div>
+        <div class="processing-text">Обработка данных...</div>
+    </div>
+
+    <div class="data-flow" id="dataFlow">
+        <div class="data-particle"></div>
+        <div class="data-particle"></div>
+        <div class="data-particle"></div>
+        <div class="data-particle"></div>
+    </div>
+
+    <div class="result-container" id="resultContainer">
+        <div class="result-text" id="resultText"></div>
+    </div>
+
+    <div class="error-container" id="errorContainer">
+        <div class="error-text" id="errorText"></div>
+    </div>
+
+    <div class="system-info">
+        Wolfram Alpha Integration • v2.0
+    </div>
+</div>
+
+<script>
+    // Состояние приложения
+    let appState = {
+        status: 'idle',
+        currentQuery: '',
+        lastResult: '',
+        isProcessing: false
+    };
+
+    // DOM элементы
+    const statusIndicator = document.getElementById('statusIndicator');
+    const queryDisplay = document.getElementById('queryDisplay');
+    const loadingAnimation = document.getElementById('loadingAnimation');
+    const dataFlow = document.getElementById('dataFlow');
+    const resultContainer = document.getElementById('resultContainer');
+    const resultText = document.getElementById('resultText');
+    const errorContainer = document.getElementById('errorContainer');
+    const errorText = document.getElementById('errorText');
+
+    // Утилиты для обновления UI
+    function updateStatus(status) {
+        appState.status = status;
+        statusIndicator.className = `status-indicator ${status}`;
+    }
+
+    function showQuery(query) {
+        queryDisplay.textContent = query;
+        queryDisplay.classList.add('visible');
+    }
+
+    function showLoading() {
+        loadingAnimation.classList.add('active');
+        dataFlow.classList.add('active');
+        hideResult();
+        hideError();
+    }
+
+    function hideLoading() {
+        loadingAnimation.classList.remove('active');
+        dataFlow.classList.remove('active');
+    }
+
+    function showResult(result) {
+        hideLoading();
+        hideError();
+
+        // Форматирование результата
+        const formattedResult = formatWolframResult(result);
+        resultText.innerHTML = formattedResult;
+        resultContainer.classList.add('visible');
+
+        updateStatus('success');
+    }
+
+    function showError(error) {
+        hideLoading();
+        hideResult();
+
+        errorText.textContent = error;
+        errorContainer.classList.add('visible');
+
+        updateStatus('error');
+    }
+
+    function hideResult() {
+        resultContainer.classList.remove('visible');
+    }
+
+    function hideError() {
+        errorContainer.classList.remove('visible');
+    }
+
+    function formatWolframResult(rawResult) {
+        if (!rawResult) return 'Результат недоступен';
+
+        let formatted = rawResult;
+
+        // Выделяем числовые значения
+        formatted = formatted.replace(/(\d+(?:\.\d+)?)\s*(°[CF]|%|\$|€|₽)/g, '<span class="result-highlight">$1$2</span>');
+
+        // Выделяем даты
+        formatted = formatted.replace(/(\w+day,\s+\w+\s+\d+,\s+\d{4})/g, '<span class="result-highlight">$1</span>');
+
+        // Выделяем диапазоны
+        formatted = formatted.replace(/\((\d+\s+to\s+\d+)\)/g, '(<span class="result-highlight">$1</span>)');
+
+        // Выделяем средние значения
+        formatted = formatted.replace(/average:\s*([^)]+)/g, 'average: <span class="result-highlight">$1</span>');
+
+        // Заменяем | на разделители
+        formatted = formatted.replace(/\s*\|\s*/g, '<br><strong>');
+
+        // Добавляем закрывающие теги для заголовков
+        formatted = formatted.replace(/<br><strong>([^<]+)(?=<br>|$)/g, '<br><strong>$1</strong>');
+
+        return formatted;
+    }
+
+    function resetUI() {
+        hideLoading();
+        hideResult();
+        hideError();
+        queryDisplay.classList.remove('visible');
+        queryDisplay.textContent = 'Ожидание запроса...';
+        updateStatus('idle');
+    }
+
+    // API функции для интеграции
+    window.START = async function(args) {
+        console.log('Wolfram запущен с аргументами:', args);
+
+        resetUI();
+
+        if (args && args.query) {
+            appState.currentQuery = args.query;
+            appState.isProcessing = true;
+
+            showQuery(`Запрос: ${args.query}`);
+            showLoading();
+            updateStatus('processing');
+
+            return {
+                status: 'processing',
+                query: args.query,
+                message: 'Отправка запроса в Wolfram Alpha...'
+            };
+        } else {
+            showError('Запрос не указан');
+            return {
+                status: 'error',
+                message: 'Параметр query обязателен'
+            };
+        }
+    };
+
+    window.SET = async function(args) {
+        console.log('Получен ответ от Wolfram:', args);
+
+        if (args && args.output) {
+            appState.lastResult = args.output;
+            appState.isProcessing = false;
+
+            showResult(args.output);
+
+            return {
+                status: 'success',
+                message: 'Результат получен и отображен'
+            };
+        } else {
+            showError('Ошибка получения данных от Wolfram Alpha');
+            return {
+                status: 'error',
+                message: 'Параметр output не найден'
+            };
+        }
+    };
+
+    window.GET = async function(args) {
+        console.log('Запрос данных Wolfram:', args);
+
+        if (args && args.field) {
+            return {
+                [args.field]: appState[args.field]
+            };
+        }
+
+        return {
+            ...appState
+        };
+    };
+
+    window.STOP = async function() {
+        console.log('Wolfram остановлен');
+
+        appState.isProcessing = false;
+        resetUI();
+
+        return {
+            status: 'stopped',
+            lastQuery: appState.currentQuery,
+            lastResult: appState.lastResult
+        };
+    };
+
+    // Инициализация
+    updateStatus('idle');
+
+    // Демонстрационная анимация при загрузке
+    setTimeout(() => {
+        queryDisplay.classList.add('visible');
+    }, 500);
+</script>
+</body>
+</html>

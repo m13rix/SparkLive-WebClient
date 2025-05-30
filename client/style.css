@@ -1,0 +1,346 @@
+:root {
+    --primary-bg-color: #080A14; /* Very dark, slightly desaturated blue/purple */
+    --ui-panel-bg: rgba(20, 22, 40, 0.65); /* Semi-transparent dark panel */
+    --ui-panel-bg-hover: rgba(25, 28, 50, 0.75);
+    --accent-color-primary: #7F5AF0; /* Vibrant purple */
+    --accent-color-secondary: #623CEA; /* Deeper purple for gradients/hovers */
+    --text-color-primary: #E8EAF6; /* Light, slightly cool white */
+    --text-color-secondary: #A0A3C0; /* Softer grey for secondary text */
+    --input-bg-color: rgba(35, 38, 60, 0.7);
+    --border-color-soft: rgba(80, 85, 120, 0.4);
+    --glow-accent: #9D85F5; /* For subtle glows or highlights */
+
+    --font-family-main: 'Inter', sans-serif;
+    --border-radius-main: 12px;
+    --border-radius-small: 8px;
+    --transition-speed: 0.3s;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: var(--font-family-main);
+    background-color: var(--primary-bg-color);
+    color: var(--text-color-primary);
+    overflow: hidden; /* Prevent scrollbars from full-screen canvas */
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.visualizer-background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+#visualizerCanvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+/* PUPIL GLOW - If ai_visualizer.js doesn't handle its own pupil,
+   and expects an HTML element, you'll need to style and position it.
+   This example assumes it's managed by ai_visualizer.js or
+   you'll need to add specific positioning for it (e.g., center of canvas) */
+/*
+#pupil-glow {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 20px;
+    height: 20px;
+    background-color: var(--glow-accent);
+    border-radius: 50%;
+    box-shadow: 0 0 15px 5px var(--glow-accent), 0 0 25px 10px rgba(157, 133, 245, 0.5);
+    pointer-events: none;
+    z-index: 2;
+}
+*/
+
+.ui-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: center; /* For config panel centering */
+    pointer-events: none; /* Allow clicks to pass through overlay by default */
+    padding: 20px;
+}
+
+.config-panel-wrapper {
+    display: flex; /* Hidden by default, shown by JS */
+    opacity: 0;
+    visibility: hidden;
+    transform: scale(0.95);
+    transition: opacity var(--transition-speed) ease, visibility var(--transition-speed) ease, transform var(--transition-speed) ease;
+    pointer-events: all; /* Enable pointer events for the panel */
+}
+
+.config-panel-wrapper.active {
+    opacity: 1;
+    visibility: visible;
+    transform: scale(1);
+}
+
+.config-panel {
+    background-color: var(--ui-panel-bg);
+    backdrop-filter: blur(12px) saturate(150%);
+    -webkit-backdrop-filter: blur(12px) saturate(150%);
+    padding: 30px 35px;
+    border-radius: var(--border-radius-main);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border-color-soft);
+    width: 100%;
+    max-width: 480px;
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+}
+
+.config-panel h2 {
+    text-align: center;
+    color: var(--text-color-primary);
+    font-weight: 600;
+    margin-bottom: 5px;
+    font-size: 1.6em;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.form-group label {
+    font-size: 0.95em;
+    color: var(--text-color-secondary);
+    font-weight: 500;
+}
+
+textarea, select {
+    background-color: var(--input-bg-color);
+    color: var(--text-color-primary);
+    border: 1px solid var(--border-color-soft);
+    border-radius: var(--border-radius-small);
+    padding: 12px 15px;
+    font-size: 1em;
+    font-family: var(--font-family-main);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+textarea:focus, select:focus {
+    outline: none;
+    border-color: var(--accent-color-primary);
+    box-shadow: 0 0 0 3px rgba(127, 90, 240, 0.3);
+}
+
+textarea {
+    resize: vertical;
+    min-height: 90px;
+}
+
+.action-button {
+    background: linear-gradient(135deg, var(--accent-color-primary), var(--accent-color-secondary));
+    color: white;
+    border: none;
+    border-radius: var(--border-radius-small);
+    padding: 12px 25px;
+    font-size: 1.05em;
+    font-weight: 500;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    pointer-events: all; /* Make buttons clickable */
+}
+
+.action-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(127, 90, 240, 0.3);
+}
+
+.action-button:active {
+    transform: translateY(0px);
+    box-shadow: 0 2px 10px rgba(127, 90, 240, 0.2);
+}
+
+/* Session Active UI Elements */
+.session-active-ui {
+    position: fixed;
+    bottom: 30px; /* Position above subtitles */
+    left: 50%;
+    transform: translateX(-50%);
+    display: none; /* Hidden by default, shown by JS */
+    align-items: center;
+    gap: 20px;
+    z-index: 15;
+    padding: 10px 20px;
+    background-color: var(--ui-panel-bg);
+    backdrop-filter: blur(10px) saturate(150%);
+    -webkit-backdrop-filter: blur(10px) saturate(150%);
+    border-radius: var(--border-radius-main);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+    border: 1px solid var(--border-color-soft);
+}
+
+.session-active-ui.active {
+    display: flex;
+}
+
+
+.status-display {
+    font-size: 0.9em;
+    color: var(--text-color-secondary);
+    padding: 5px 10px;
+    border-radius: var(--border-radius-small);
+    background-color: rgba(0,0,0,0.1);
+    min-width: 150px;
+    text-align: center;
+}
+
+.action-button.stop-button {
+    background: linear-gradient(135deg, #E57373, #D32F2F); /* Red gradient */
+    padding: 10px 15px;
+    font-size: 0.95em;
+}
+.action-button.stop-button:hover {
+    box-shadow: 0 6px 20px rgba(229, 115, 115, 0.4);
+}
+
+
+/* Subtitles Area */
+.subtitles-display-area {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80%;
+    max-width: 700px;
+    min-height: 60px;
+    max-height: 120px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 8px;
+    padding: 20px 20px;
+    z-index: 12;
+    background: rgba(10, 12, 26, 0.5);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: var(--border-radius-small);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--transition-speed) ease, visibility var(--transition-speed) ease;
+    pointer-events: none;
+    margin-bottom: 20px;
+    mask-image: linear-gradient(to bottom,
+    transparent 0%,
+    black 35%, /* Start fade-in */
+    black 65%, /* End fade-in */
+    transparent 100%
+    );
+}
+
+.subtitles-display-area.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.subtitle-entry {
+    width: fit-content;
+    max-width: 90%;
+    padding: 8px 14px;
+    border-radius: var(--border-radius-small);
+    line-height: 1.5;
+    font-size: 1em; /* Slightly larger for readability */
+    color: var(--text-color-primary);
+    opacity: 0;
+    transform: translateY(10px);
+    animation: fadeInSubtitle 0.4s ease forwards;
+}
+
+@keyframes fadeInSubtitle {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.subtitle-entry .speaker {
+    font-weight: 600;
+    margin-right: 8px;
+}
+
+.user-subtitle {
+    background-color: rgba(127, 90, 240, 0.2); /* Accent color based */
+    color: var(--glow-accent);
+    align-self: center;
+    text-align: center;
+}
+.user-subtitle .speaker { color: var(--accent-color-primary); }
+
+.ai-subtitle {
+    background-color: rgba(80, 85, 120, 0.2); /* Neutral secondary */
+    color: var(--text-color-secondary);
+    align-self: flex-start;
+}
+.ai-subtitle .speaker { color: #B0B3D0; }
+
+.interim-subtitle-text { /* Class for the span containing interim text */
+    color: var(--text-color-secondary);
+    font-style: italic;
+    opacity: 0.7;
+}
+
+/* Custom scrollbar for subtitles if it gets too long */
+.subtitles-display-area::-webkit-scrollbar {
+    width: 0px;
+}
+.subtitles-display-area::-webkit-scrollbar-track {
+    background: transparent;
+}
+.subtitles-display-area::-webkit-scrollbar-thumb {
+    background-color: var(--accent-color-primary);
+    border-radius: 3px;
+}
+.subtitles-display-area::-webkit-scrollbar-thumb:hover {
+    background-color: var(--glow-accent);
+}
+
+.function-frame {
+    display: block;
+    z-index: 100;
+    border-radius: 100%;
+    height: 50vh;
+    mask-image: radial-gradient(circle at center, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 1) 60%, rgba(0, 0, 0, 0) 80%);
+    border: none;
+}
+
+@media (max-width: 768px) {
+    .config-panel-wrapper{
+        display: none;
+    }
+
+    .session-active-ui.active{
+        display: none;
+    }
+}

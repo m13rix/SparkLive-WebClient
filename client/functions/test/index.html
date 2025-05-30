@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Функция счетчика</title>
+    <style>
+        .counter-container {
+            font-family: Arial, sans-serif;
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f0f8ff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        .counter-value {
+            font-size: 48px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin: 20px 0;
+        }
+        .counter-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .increment {
+            background-color: #27ae60;
+            color: white;
+        }
+        .increment:hover {
+            background-color: #2ecc71;
+        }
+        .decrement {
+            background-color: #c0392b;
+            color: white;
+        }
+        .decrement:hover {
+            background-color: #e74c3c;
+        }
+        .reset {
+            background-color: #7f8c8d;
+            color: white;
+        }
+        .reset:hover {
+            background-color: #95a5a6;
+        }
+        .counter-settings {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #bdc3c7;
+        }
+        .counter-settings input[type="number"] {
+            padding: 8px;
+            width: 80px;
+            border: 1px solid #bdc3c7;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .counter-settings label {
+            display: block;
+            margin-bottom: 5px;
+            color: #7f8c8d;
+        }
+    </style>
+</head>
+<body>
+<div class="counter-container">
+    <h2>Счетчик</h2>
+    <div class="counter-value" id="counterValue">0</div>
+    <div class="counter-buttons">
+        <button class="decrement" id="decrementBtn">Уменьшить</button>
+        <button class="reset" id="resetBtn">Сбросить</button>
+        <button class="increment" id="incrementBtn">Увеличить</button>
+    </div>
+    <div class="counter-settings">
+        <label for="stepInput">Шаг изменения:</label>
+        <input type="number" id="stepInput" value="1" min="1" max="100">
+    </div>
+</div>
+
+<script>
+    // Состояние счетчика
+    let counterState = {
+        value: 0,
+        step: 1,
+        min: -100,
+        max: 100
+    };
+
+    // DOM элементы
+    const counterValueElement = document.getElementById('counterValue');
+    const incrementBtn = document.getElementById('incrementBtn');
+    const decrementBtn = document.getElementById('decrementBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const stepInput = document.getElementById('stepInput');
+
+    // Обновление отображения счетчика
+    function updateDisplay() {
+        counterValueElement.textContent = counterState.value;
+
+        // Проверка на достижение предела
+        if (counterState.value >= counterState.max) {
+            incrementBtn.disabled = true;
+        } else {
+            incrementBtn.disabled = false;
+        }
+
+        if (counterState.value <= counterState.min) {
+            decrementBtn.disabled = true;
+        } else {
+            decrementBtn.disabled = false;
+        }
+    }
+
+    // Обработчики событий кнопок
+    incrementBtn.addEventListener('click', () => {
+        const step = parseInt(stepInput.value) || 1;
+        counterState.value = Math.min(counterState.value + step, counterState.max);
+        updateDisplay();
+    });
+
+    decrementBtn.addEventListener('click', () => {
+        const step = parseInt(stepInput.value) || 1;
+        counterState.value = Math.max(counterState.value - step, counterState.min);
+        updateDisplay();
+    });
+
+    resetBtn.addEventListener('click', () => {
+        counterState.value = 0;
+        updateDisplay();
+    });
+
+    // Обновление шага изменения
+    stepInput.addEventListener('change', () => {
+        const stepValue = parseInt(stepInput.value);
+        if (stepValue < 1) stepInput.value = 1;
+        if (stepValue > 100) stepInput.value = 100;
+        counterState.step = parseInt(stepInput.value) || 1;
+    });
+
+    // Функция START - вызывается при запуске функции
+    window.START = async function(args) {
+        console.log('Счетчик запущен с аргументами:', args);
+
+        // Инициализация начальных значений из аргументов, если они предоставлены
+        if (args.initialValue !== undefined) {
+            counterState.value = parseInt(args.initialValue) || 0;
+        }
+
+        if (args.step !== undefined) {
+            counterState.step = parseInt(args.step) || 1;
+            stepInput.value = counterState.step;
+        }
+
+        if (args.min !== undefined) {
+            counterState.min = parseInt(args.min);
+        }
+
+        if (args.max !== undefined) {
+            counterState.max = parseInt(args.max);
+        }
+
+        updateDisplay();
+
+        return {
+            status: 'running',
+            initialState: {...counterState}
+        };
+    };
+
+    // Функция SET - обновление параметров счетчика
+    window.SET = async function(args) {
+        console.log('Обновление параметров счетчика:', args);
+
+        let updated = false;
+
+        if (args.value !== undefined) {
+            counterState.value = parseInt(args.value);
+            updated = true;
+        }
+
+        if (args.step !== undefined) {
+            counterState.step = parseInt(args.step);
+            stepInput.value = counterState.step;
+            updated = true;
+        }
+
+        if (args.min !== undefined) {
+            counterState.min = parseInt(args.min);
+            updated = true;
+        }
+
+        if (args.max !== undefined) {
+            counterState.max = parseInt(args.max);
+            updated = true;
+        }
+
+        if (updated) {
+            updateDisplay();
+        }
+
+        return {
+            status: 'updated',
+            currentState: {...counterState}
+        };
+    };
+
+    // Функция GET - получение текущего состояния счетчика
+    window.GET = async function(args) {
+        console.log('Запрос данных счетчика:', args);
+
+        // Можно запросить конкретные поля
+        if (args.field) {
+            return {
+                [args.field]: counterState[args.field]
+            };
+        }
+
+        return {
+            ...counterState
+        };
+    };
+
+    // Функция STOP - вызывается при остановке функции
+    window.STOP = async function() {
+        console.log('Счетчик остановлен');
+
+        // Здесь можно выполнить необходимые действия при остановке
+        // Например, сохранить состояние или очистить ресурсы
+
+        return {
+            status: 'stopped',
+            finalValue: counterState.value
+        };
+    };
+
+    // Инициализация
+    updateDisplay();
+</script>
+</body>
+</html>

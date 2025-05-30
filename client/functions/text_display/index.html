@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text Display</title>
+    <style>
+        :root {
+            --primary-glow: rgba(120, 156, 255, 0.8);
+            --secondary-glow: rgba(88, 182, 235, 0.6);
+            --text-color: rgba(255, 255, 255, 0.95);
+            --background-color: rgba(13, 17, 38, 0.95);
+            --accent-color: #4a9dff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body, html {
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+            font-family: 'Segoe UI', 'Roboto', sans-serif;
+            background-color: transparent;
+            color: var(--text-color);
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            width: 100%;
+            padding: 20px;
+            position: relative;
+        }
+
+        .text-display {
+            position: relative;
+            width: 90%;
+            max-width: 800px;
+            background-color: var(--background-color);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 0 30px rgba(74, 157, 255, 0.2);
+            overflow: hidden;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeIn 0.6s cubic-bezier(0.215, 0.61, 0.355, 1) 0.2s forwards;
+        }
+
+        .text-display::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent-color), transparent);
+            animation: glowLine 4s linear infinite;
+        }
+
+        .text-container {
+            position: relative;
+            z-index: 1;
+            margin-top: 10px;
+        }
+
+        .text-content {
+            text-align: center;
+            line-height: 1.6;
+            font-size: 18px;
+            font-weight: 400;
+            letter-spacing: 0.2px;
+            overflow: auto;
+            max-height: 70vh;
+            padding-right: 10px;
+        }
+
+        .text-content::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .text-content::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 5px;
+        }
+
+        .text-content::-webkit-scrollbar-thumb {
+            background: var(--accent-color);
+            border-radius: 5px;
+        }
+
+        .title {
+            font-size: 24px;
+            font-weight: 500;
+            margin-bottom: 15px;
+            color: var(--accent-color);
+            text-shadow: 0 0 10px rgba(74, 157, 255, 0.5);
+            position: relative;
+            display: flex;
+            justify-content: center;
+        }
+
+        .pulse-circle {
+            position: absolute;
+            top: 50%;
+            left: -25px;
+            transform: translateY(-50%);
+            width: 10px;
+            height: 10px;
+            background-color: var(--accent-color);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--accent-color);
+            animation: pulse 2s infinite;
+        }
+
+        .glow-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at center, rgba(74, 157, 255, 0.1) 0%, transparent 70%);
+            opacity: 0.6;
+            z-index: 0;
+        }
+
+        .neural-network {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 0;
+            opacity: 0.15;
+        }
+
+        .neural-line {
+            position: absolute;
+            height: 1px;
+            width: 100px;
+            background: linear-gradient(90deg, transparent, var(--accent-color), transparent);
+            animation: floatLine 6s linear infinite;
+            opacity: 0.7;
+        }
+
+        /* Markdown styles */
+        .text-content h1, .text-content h2, .text-content h3,
+        .text-content h4, .text-content h5, .text-content h6 {
+            color: var(--accent-color);
+            margin-top: 15px;
+            margin-bottom: 10px;
+        }
+
+        .text-content h1 { font-size: 24px; }
+        .text-content h2 { font-size: 22px; }
+        .text-content h3 { font-size: 20px; }
+
+        .text-content p {
+            margin-bottom: 12px;
+        }
+
+        .text-content ul, .text-content ol {
+            margin-left: 20px;
+            margin-bottom: 12px;
+        }
+
+        .text-content li {
+            margin-bottom: 5px;
+        }
+
+        .text-content code {
+            background-color: rgba(0, 0, 0, 0.2);
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+
+        .text-content pre {
+            background-color: rgba(0, 0, 0, 0.2);
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 12px;
+        }
+
+        .text-content pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+
+        .text-content blockquote {
+            border-left: 3px solid var(--accent-color);
+            padding-left: 10px;
+            margin-left: 0;
+            color: rgba(255, 255, 255, 0.8);
+            font-style: italic;
+        }
+
+        .text-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 12px;
+        }
+
+        .text-content th, .text-content td {
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 8px;
+            text-align: left;
+        }
+
+        .text-content th {
+            background-color: rgba(74, 157, 255, 0.1);
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: translateY(-50%) scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: translateY(-50%) scale(1.5);
+                opacity: 0.6;
+            }
+            100% {
+                transform: translateY(-50%) scale(1);
+                opacity: 1;
+            }
+        }
+
+        @keyframes glowLine {
+            0% {
+                background-position: -200% 0;
+            }
+            100% {
+                background-position: 200% 0;
+            }
+        }
+
+        @keyframes floatLine {
+            0% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.5;
+            }
+            90% {
+                opacity: 0.5;
+            }
+            100% {
+                transform: translateY(-100px) rotate(360deg);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="neural-network" id="neuralNetwork"></div>
+    <div class="text-display">
+        <div class="glow-background"></div>
+        <div class="pulse-circle"></div>
+        <h2 class="title">Важная информация</h2>
+        <div class="text-container">
+            <div class="text-content" id="textContent"></div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
+<script>
+    // Состояние компонента
+    const state = {
+        text: '',
+        title: 'Важная информация',
+        animationSpeed: 'normal'
+    };
+
+    // DOM элементы
+    const textContent = document.getElementById('textContent');
+    const neuralNetwork = document.getElementById('neuralNetwork');
+    const titleElement = document.querySelector('.title');
+
+    // Создание элементов нейронной сети
+    function createNeuralNetworkElements() {
+        neuralNetwork.innerHTML = '';
+        const linesCount = 15;
+
+        for (let i = 0; i < linesCount; i++) {
+            const line = document.createElement('div');
+            line.className = 'neural-line';
+
+            // Случайное расположение и задержка
+            line.style.top = `${Math.random() * 100}%`;
+            line.style.left = `${Math.random() * 100}%`;
+            line.style.width = `${50 + Math.random() * 100}px`;
+            line.style.animationDelay = `${Math.random() * 5}s`;
+            line.style.animationDuration = `${5 + Math.random() * 5}s`;
+            line.style.transform = `rotate(${Math.random() * 360}deg)`;
+
+            neuralNetwork.appendChild(line);
+        }
+    }
+
+    // Обновление текстового содержимого с поддержкой Markdown
+    function updateTextContent() {
+        if (!state.text) {
+            textContent.innerHTML = '<p>Нет доступной информации</p>';
+            return;
+        }
+
+        // Парсинг Markdown в HTML
+        textContent.innerHTML = marked.parse(state.text);
+
+        // Анимация появления текста
+        const elements = textContent.querySelectorAll('p, h1, h2, h3, h4, h5, h6, ul, ol, li, blockquote, pre, table');
+
+        elements.forEach((element, index) => {
+            element.style.opacity = '0';
+            element.style.transform = 'translateY(15px)';
+            element.style.transition = `opacity 0.5s ease, transform 0.5s ease`;
+            element.style.transitionDelay = `${index * 0.1}s`;
+
+            setTimeout(() => {
+                element.style.opacity = '1';
+                element.style.transform = 'translateY(0)';
+            }, 50);
+        });
+    }
+
+    // Обновление заголовка
+    function updateTitle() {
+        titleElement.textContent = state.title;
+    }
+
+    // Функция START - вызывается при запуске функции
+    window.START = async function(args) {
+        console.log('Text Display запущен с аргументами:', args);
+
+        // Инициализация начальных значений из аргументов
+        if (args.text !== undefined) {
+            state.text = args.text;
+        }
+
+        if (args.title !== undefined) {
+            state.title = args.title;
+        }
+
+        if (args.animationSpeed !== undefined) {
+            state.animationSpeed = args.animationSpeed;
+        }
+
+        // Создаем элементы нейронной сети
+        createNeuralNetworkElements();
+
+        // Обновляем UI
+        updateTitle();
+        updateTextContent();
+
+        return {
+            status: 'running',
+            initialState: {...state}
+        };
+    };
+
+    // Функция SET - обновление параметров компонента
+    window.SET = async function(args) {
+        console.log('Обновление параметров Text Display:', args);
+
+        let updated = false;
+
+        if (args.text !== undefined) {
+            state.text = args.text;
+            updated = true;
+        }
+
+        if (args.title !== undefined) {
+            state.title = args.title;
+            updated = true;
+        }
+
+        if (args.animationSpeed !== undefined) {
+            state.animationSpeed = args.animationSpeed;
+            updated = true;
+        }
+
+        if (updated) {
+            updateTitle();
+            updateTextContent();
+        }
+
+        return {
+            status: 'updated',
+            currentState: {...state}
+        };
+    };
+
+    // Функция GET - получение текущего состояния компонента
+    window.GET = async function(args) {
+        console.log('Запрос данных Text Display:', args);
+
+        // Можно запросить конкретные поля
+        if (args && args.field) {
+            return {
+                [args.field]: state[args.field]
+            };
+        }
+
+        return {
+            ...state
+        };
+    };
+
+    // Функция STOP - вызывается при остановке функции
+    window.STOP = async function() {
+        console.log('Text Display остановлен');
+
+        // Здесь можно выполнить необходимые действия при остановке
+        // Например, плавное исчезновение компонента
+        const container = document.querySelector('.text-display');
+        container.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+        container.style.opacity = '0';
+        container.style.transform = 'translateY(20px)';
+
+        return {
+            status: 'stopped',
+            finalState: {...state}
+        };
+    };
+
+    // Инициализация при загрузке страницы
+    createNeuralNetworkElements();
+</script>
+</body>
+</html>

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Голосовой чат с ИИ</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<!-- Full-screen visualizer background -->
+<div class="visualizer-background">
+    <canvas id="visualizerCanvas"></canvas>
+    <!-- Pupil glow is part of your ai_visualizer.js, so it should be controlled/placed by it -->
+    <div id="pupil-glow" style="display: none;"></div>
+</div>
+
+<!-- UI Overlay Elements -->
+<div class="ui-overlay">
+    <div class="config-panel-wrapper active">
+        <div class="config-panel">
+            <h2>Настройки ИИ</h2>
+            <div class="form-group">
+                <label for="systemPrompt">Системный промпт:</label>
+                <textarea id="systemPrompt" rows="4" placeholder="Опишите роль и задачи ИИ..."></textarea>
+            </div>
+            <div class="form-group">
+                <label for="voiceSelect">Голос ИИ:</label>
+                <select id="voiceSelect">
+                    <option value="Orus">Orus (Мужской)</option>
+                    <option value="Charon">Charon (Мужской)</option>
+                    <option value="Puck">Puck (Мужской)</option>
+                    <option value="Fenrir">Fenrir (Мужской)</option>
+                    <option value="Kore">Kore (Женский)</option>
+                    <option value="Aoede">Aoede (Женский)</option>
+                    <option value="Leda">Leda (Женский)</option>
+                    <option value="Zephyr">Zephyr (Женский)</option>
+                </select>
+            </div>
+            <button id="startSessionButton" class="action-button">Начать разговор</button>
+        </div>
+    </div>
+
+    <div class="session-active-ui">
+        <div id="status" class="status-display">Статус: Неактивно</div>
+        <button id="stopSessionButton" class="action-button stop-button">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>
+            Завершить
+        </button>
+    </div>
+
+    <div id="subtitlesDisplay" class="subtitles-display-area">
+        <!-- Real-time subtitles will appear here -->
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.14.0/dist/ort.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@ricky0123/vad-web@0.0.19/dist/bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
+
+<!-- Подключаем ваш ai_visualizer.js ПЕРЕД ui.js -->
+<script src="ai_visualizer.js"></script>
+<script src="ui.js"></script>
+<script src="client_function_manager.js"></script>
+<script src="technical.js"></script>
+</body>
+</html>

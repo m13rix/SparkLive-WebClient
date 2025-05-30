@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Search</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: radial-gradient(circle at center, #0f1419 0%, #020408 100%);
+            color: #ffffff;
+            overflow-x: hidden;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        .search-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .search-header {
+            text-align: center;
+            margin-bottom: 40px;
+            opacity: 0;
+            animation: fadeInUp 0.8s ease forwards;
+        }
+
+        .search-title {
+            font-size: 32px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 12px;
+            letter-spacing: -0.02em;
+        }
+
+        .search-subtitle {
+            font-size: 16px;
+            color: #8892b0;
+            font-weight: 400;
+        }
+
+        .search-query {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 32px;
+            opacity: 0;
+            animation: fadeInUp 0.8s ease 0.2s forwards;
+            position: relative;
+            overflow: hidden;
+            text-align: center;
+        }
+
+        .search-query::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        .query-label {
+            font-size: 14px;
+            font-weight: 500;
+            color: #8892b0;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .query-text {
+            font-size: 18px;
+            font-weight: 500;
+            color: #ffffff;
+            line-height: 1.4;
+        }
+
+        .search-status {
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 32px;
+            padding: 16px;
+            background: rgba(103, 126, 234, 0.1);
+            border: 1px solid rgba(103, 126, 234, 0.2);
+            border-radius: 12px;
+            display: none;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+        }
+
+        .search-status.active {
+            display: flex;
+            transform: translateY(0);
+        }
+
+        .status-spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(103, 126, 234, 0.3);
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .status-text {
+            font-size: 14px;
+            font-weight: 500;
+            color: #667eea;
+        }
+
+        .results-container {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.5s ease;
+        }
+
+        .results-container.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .results-header {
+            font-size: 20px;
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .results-count {
+            font-size: 14px;
+            font-weight: 400;
+            color: #8892b0;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 4px 12px;
+            border-radius: 20px;
+        }
+
+        .search-result {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 16px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            opacity: 0;
+            max-width: 90%;
+            justify-self: center;
+            animation: slideInUp 0.6s ease forwards;
+        }
+
+        .search-result:nth-child(n) {
+            animation-delay: calc(var(--index) * 0.1s);
+        }
+
+        .search-result:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(103, 126, 234, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .result-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .favicon {
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            flex-shrink: 0;
+            background: rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+
+        .favicon img {
+            width: 100%;
+            height: 100%;
+            border-radius: 4px;
+            object-fit: cover;
+        }
+
+        .result-meta {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .result-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #ffffff;
+            line-height: 1.3;
+            margin-bottom: 6px;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+
+        .result-title:hover {
+            color: #667eea;
+        }
+
+        .result-domain {
+            font-size: 13px;
+            color: #8892b0;
+            font-weight: 500;
+        }
+
+        .result-snippet {
+            font-size: 15px;
+            line-height: 1.6;
+            color: #a8b2d1;
+            margin-bottom: 16px;
+        }
+
+        .result-content {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 16px;
+            font-size: 14px;
+            line-height: 1.5;
+            color: #8892b0;
+            max-height: 120px;
+            overflow: hidden;
+            position: relative;
+            cursor: pointer;
+            transition: max-height 0.3s ease;
+        }
+
+        .result-content.expanded {
+            max-height: none;
+        }
+
+        .result-content::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 40px;
+            background: linear-gradient(transparent, rgba(0, 0, 0, 0.2));
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .result-content.expanded::after {
+            opacity: 0;
+        }
+
+        .expand-button {
+            position: absolute;
+            bottom: 8px;
+            right: 40%;
+            background: rgba(103, 126, 234, 0.8);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 4px 8px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .expand-button:hover {
+            background: rgba(103, 126, 234, 1);
+            transform: scale(1.05);
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 60px 20px;
+            color: #8892b0;
+            font-size: 16px;
+        }
+
+        .floating-particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: rgba(103, 126, 234, 0.3);
+            border-radius: 50%;
+            animation: float 8s infinite ease-in-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes shimmer {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 0;
+            }
+            50% {
+                transform: translateY(-100px) rotate(180deg);
+                opacity: 1;
+            }
+        }
+
+        .glow-effect {
+            position: sticky;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(103, 126, 234, 0.1) 0%, transparent 70%);
+            animation: rotate 10s linear infinite;
+            pointer-events: none;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .search-container {
+                padding: 20px 16px;
+            }
+
+            .search-title {
+                font-size: 24px;
+            }
+
+            .search-result {
+                padding: 20px;
+            }
+
+            .result-header {
+                gap: 12px;
+            }
+
+            .result-title {
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="floating-particles" id="particles"></div>
+
+<div class="search-container">
+    <div class="glow-effect"></div>
+
+    <div class="search-header">
+        <h1 class="search-title">Web Search</h1>
+        <p class="search-subtitle">Поиск в глобальной сети</p>
+    </div>
+
+    <div class="search-query" id="queryContainer" style="display: none;">
+        <div class="query-label">Запрос</div>
+        <div class="query-text" id="queryText"></div>
+    </div>
+
+    <div class="search-status" id="searchStatus">
+        <div class="status-spinner"></div>
+        <span class="status-text">Ожидание запроса...</span>
+    </div>
+
+    <div class="results-container" id="resultsContainer">
+        <div class="results-header" style="display: none;">
+            <span>Результаты поиска</span>
+            <span class="results-count" id="resultsCount">0</span>
+        </div>
+        <div id="resultsContent"></div>
+    </div>
+</div>
+
+<script>
+    // Состояние поиска
+    let searchState = {
+        query: '',
+        results: [],
+        isSearching: false,
+        status: 'idle'
+    };
+
+    // DOM элементы
+    const queryContainer = document.getElementById('queryContainer');
+    const queryText = document.getElementById('queryText');
+    const searchStatus = document.getElementById('searchStatus');
+    const resultsContainer = document.getElementById('resultsContainer');
+    const resultsContent = document.getElementById('resultsContent');
+    const resultsCount = document.getElementById('resultsCount');
+
+    // Создание плавающих частиц
+    function createParticles() {
+        const particles = document.getElementById('particles');
+        for (let i = 0; i < 20; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            particle.style.left = Math.random() * 100 + '%';
+            particle.style.animationDelay = Math.random() * 8 + 's';
+            particle.style.animationDuration = (8 + Math.random() * 4) + 's';
+            particles.appendChild(particle);
+        }
+    }
+
+    // Обновление статуса поиска
+    function updateSearchStatus(status, text) {
+        const statusElement = document.querySelector('.status-text');
+        const spinner = document.querySelector('.status-spinner');
+
+        statusElement.textContent = text;
+
+        if (status === 'searching') {
+            searchStatus.classList.add('active');
+            spinner.style.display = 'block';
+        } else if (status === 'completed') {
+            setTimeout(() => {
+                searchStatus.classList.remove('active');
+            }, 1000);
+        }
+    }
+
+    // Создание элемента результата поиска
+    function createResultElement(result, index) {
+        const resultDiv = document.createElement('div');
+        resultDiv.className = 'search-result';
+        resultDiv.style.setProperty('--index', index);
+
+        const favicon = result.favicon ?
+            `<img src="${result.favicon}" alt="" onerror="this.style.display='none'">` :
+            result.domain ? result.domain.charAt(0).toUpperCase() : '🌐';
+
+        resultDiv.innerHTML = `
+                <div class="result-header">
+                    <div class="favicon">${favicon}</div>
+                    <div class="result-meta">
+                        <div class="result-title" onclick="window.open('${result.url || '#'}', '_blank')">${result.title || 'Без названия'}</div>
+                        <div class="result-domain">${result.domain || 'Неизвестный источник'}</div>
+                    </div>
+                </div>
+                ${result.snippet ? `<div class="result-snippet">${result.snippet}</div>` : ''}
+                ${result.content ? `
+                    <div class="result-content" onclick="toggleContent(this)">
+                        ${result.content}
+                        <button class="expand-button">Показать больше</button>
+                    </div>
+                ` : ''}
+            `;
+
+        return resultDiv;
+    }
+
+    // Переключение развернутого контента
+    function toggleContent(element) {
+        element.classList.toggle('expanded');
+        const button = element.querySelector('.expand-button');
+        if (element.classList.contains('expanded')) {
+            button.textContent = 'Скрыть';
+        } else {
+            button.textContent = 'Показать больше';
+        }
+    }
+
+    // Отображение результатов
+    function displayResults(results) {
+        resultsContent.innerHTML = '';
+
+        if (!results || results.length === 0) {
+            resultsContent.innerHTML = '<div class="no-results">Результаты не найдены</div>';
+            return;
+        }
+
+        results.forEach((result, index) => {
+            const resultElement = createResultElement(result, index);
+            resultsContent.appendChild(resultElement);
+        });
+
+        resultsCount.textContent = results.length;
+        document.querySelector('.results-header').style.display = 'flex';
+        resultsContainer.classList.add('visible');
+    }
+
+    // Функция START
+    window.START = async function(args) {
+        console.log('Web Search запущен с аргументами:', args);
+
+        searchState.status = 'started';
+
+        if (args && args.query) {
+            searchState.query = args.query;
+            queryText.textContent = args.query;
+            queryContainer.style.display = 'block';
+
+            updateSearchStatus('searching', 'Выполняется поиск...');
+            searchState.isSearching = true;
+        }
+
+        return {
+            status: 'started',
+            query: searchState.query
+        };
+    };
+
+    // Функция SET
+    window.SET = async function(args) {
+        console.log('Обновление результатов поиска:', args);
+
+        if (args && args.results) {
+            searchState.results = args.results;
+            searchState.isSearching = false;
+
+            updateSearchStatus('completed', 'Поиск завершен');
+
+            setTimeout(() => {
+                displayResults(args.results);
+            }, 500);
+        }
+
+        return {
+            status: 'updated',
+            resultsCount: searchState.results.length
+        };
+    };
+
+    // Функция GET
+    window.GET = async function(args) {
+        console.log('Запрос данных поиска:', args);
+
+        if (args && args.field) {
+            return {
+                [args.field]: searchState[args.field]
+            };
+        }
+
+        return {
+            ...searchState
+        };
+    };
+
+    // Функция STOP
+    window.STOP = async function() {
+        console.log('Web Search остановлен');
+
+        searchState.isSearching = false;
+        updateSearchStatus('stopped', 'Поиск остановлен');
+
+        return {
+            status: 'stopped',
+            query: searchState.query,
+            resultsCount: searchState.results.length
+        };
+    };
+
+    // Инициализация
+    createParticles();
+    updateSearchStatus('idle', 'Ожидание запроса...');
+</script>
+</body>
+</html>
