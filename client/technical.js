@@ -141,7 +141,7 @@ const technical = {
         this.recognition.onend = () => {
             console.log('Recognition: onend. Current isRecognitionActive:', this.isRecognitionActive); // Лог для отладки
             this.isRecognitionActive = false; // --- СБРАСЫВАЕМ ФЛАГ ПО ЗАВЕРШЕНИИ ---
-            if (finalTranscriptForSend.trim() && !this.isAiTalking && !window.matchMedia('(max-width: 768px)').matches) {
+            if (finalTranscriptForSend.trim() && !this.isAiTalking) {
                 if (window.ui) window.ui.addSubtitle(finalTranscriptForSend.trim(), 'user', false);
                 this.sendTranscription(finalTranscriptForSend.trim());
                 if (window.ui) window.ui.setAIStateVisualizer('thinking');
