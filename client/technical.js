@@ -18,6 +18,8 @@ const technical = {
     checkAudioBufferInterval: null,
     amplitudeUpdateInterval: null, // For frequent amplitude updates for visualizer
 
+    isRecognitionActive: false,
+
     initAudioContext() {
         if (!this.audioContext) {
             this.audioContext = new (window.AudioContext || window.webkitAudioContext)({
@@ -106,6 +108,8 @@ const technical = {
         this.recognition.continuous = false;
 
         this.recognition.onstart = () => {
+            console.log('Recognition: onstart'); // Лог для отладки
+            this.isRecognitionActive = true; // --- УСТАНАВЛИВАЕМ ФЛАГ ---
             if (window.ui) window.ui.updateStatus("Слушаю...");
         };
 
@@ -129,31 +133,64 @@ const technical = {
         };
 
         this.recognition.onerror = (event) => {
-            console.error('Ошибка распознавания:', event.error);
-            if (window.ui) window.ui.updateStatus("Ошибка распознавания");
+            console.error('Ошибка распознавания:', event.error, event.message); // Добавьте event.message
+            this.isRecognitionActive = false; // --- СБРАСЫВАЕМ ФЛАГ ПРИ ОШИБКЕ ---
+            if (window.ui) window.ui.updateStatus("Ошибка распознавания: " + event.error);
         };
 
         this.recognition.onend = () => {
-            if (finalTranscriptForSend.trim() && !this.isAiTalking) {
+            console.log('Recognition: onend. Current isRecognitionActive:', this.isRecognitionActive); // Лог для отладки
+            this.isRecognitionActive = false; // --- СБРАСЫВАЕМ ФЛАГ ПО ЗАВЕРШЕНИИ ---
+            if (finalTranscriptForSend.trim() && !this.isAiTalking && !window.matchMedia('(max-width: 768px)').matches) {
                 if (window.ui) window.ui.addSubtitle(finalTranscriptForSend.trim(), 'user', false);
                 this.sendTranscription(finalTranscriptForSend.trim());
                 if (window.ui) window.ui.setAIStateVisualizer('thinking');
+            } else {
+                console.log('Recognition: onend - No final transcript to send or conditions not met.');
+                if (window.ui && !this.isAiTalking) window.ui.updateStatus("Готов к работе");
             }
             finalTranscriptForSend = '';
         };
+
+        // Дополнительные обработчики для отладки (если еще не добавлены)
+        this.recognition.onsoundstart = () => console.log('Recognition: onsoundstart');
+        this.recognition.onsoundend = () => console.log('Recognition: onsoundend');
+        this.recognition.onspeechstart = () => console.log('Recognition: onspeechstart - speech detected');
+        this.recognition.onspeechend = () => console.log('Recognition: onspeechend - speech ended');
+        this.recognition.onnomatch = () => console.log('Recognition: onnomatch');
     },
 
     async initVAD() {
         try {
             this.vadInstance = await vad.MicVAD.new({
                 onSpeechStart: () => {
-                    if (!this.isAiTalking && this.recognition) {
-                        this.recognition.start();
+                    console.log('VAD: onSpeechStart. isRecognitionActive:', this.isRecognitionActive); // Лог для отладки
+                    // --- ПРОВЕРЯЕМ ФЛАГ ПЕРЕД ЗАПУСКОМ ---
+                    if (!this.isAiTalking && this.recognition && !this.isRecognitionActive) {
+                        console.log('VAD: Calling recognition.start()');
+                        try {
+                            this.recognition.start();
+                            // Не нужно здесь устанавливать isRecognitionActive = true,
+                            // это произойдет в recognition.onstart
+                        } catch (e) {
+                            console.error('Error starting recognition:', e);
+                            // Если сама команда start() вызвала ошибку, сбросим флаг, если бы мы его тут ставили.
+                            // Но лучше полагаться на onstart/onend/onerror.
+                        }
+                    } else {
+                        if (this.isRecognitionActive) {
+                            console.warn('VAD: onSpeechStart fired, but recognition is already active. Ignoring call to start().');
+                        }
                     }
                 },
                 onSpeechEnd: (audio) => {
-                    if (!this.isAiTalking && this.recognition) {
+                    console.log('VAD: onSpeechEnd. isRecognitionActive:', this.isRecognitionActive); // Лог для отладки
+                    // Останавливаем, только если распознавание было активно (на всякий случай)
+                    if (!this.isAiTalking && this.recognition && this.isRecognitionActive) {
+                        console.log('VAD: Calling recognition.stop()');
                         this.recognition.stop();
+                    } else if (!this.isRecognitionActive) {
+                        console.log('VAD: onSpeechEnd fired, but recognition was not active. Not calling stop().');
                     }
                 },
             });
