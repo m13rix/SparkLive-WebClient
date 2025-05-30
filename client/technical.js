@@ -204,7 +204,7 @@ const technical = {
         this.initAudioContext(); // Initializes processor and analyserNode
         this.initSpeechRecognition();
 
-        this.ws = new WebSocket('ws://sparkai-live.up.railway.app/ws');
+        this.ws = new WebSocket('wss://sparkai-live.up.railway.app/ws');
 
         this.ws.onopen = async () => {
             const systemPromptValue = `
