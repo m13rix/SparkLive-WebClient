@@ -2,27 +2,13 @@ const canvas = document.getElementById('visualizerCanvas');
 const ctx = canvas.getContext('2d');
 const pupilGlow = document.getElementById('pupil-glow');
 
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
-
-let centerX = canvas.width / 2;
-let centerY = canvas.height / 2;
-let baseRadius = Math.min(centerX, centerY) * 0.5;
-let baseDisplayingRadius = Math.min(centerX, centerY) * 0.7;
-if (window.matchMedia('(max-width: 768px)').matches) {
-    baseRadius = Math.min(centerX, centerY) * 0.8;
-    baseDisplayingRadius = Math.min(centerX, centerY) * 0.9;
-}
+let centerX, centerY, baseRadius, baseDisplayingRadius, maxOffset;
 const numCircles = 8;
-let maxOffset = 13;
-if (window.matchMedia('(max-width: 768px)').matches) {
-    maxOffset = 8
-}
 const baseHue = 210;
 const hueVariation = 30;
 let glowIntensity = 18;
-let targetGlowIntensity = 18; // Целевая интенсивность свечения
-const glowSmoothFactor = 0.1; // Фактор сглаживания для свечения
+let targetGlowIntensity = 18;
+const glowSmoothFactor = 0.1;
 
 let aiState = 'idle';
 let targetAIState = 'idle';
@@ -33,6 +19,45 @@ let targetSpeechAmplitude = 0;
 const amplitudeSmoothFactor = 0.2;
 
 const circles = [];
+
+// Функция для обновления размеров и пересчета всех параметров
+function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    centerX = canvas.width / 2;
+    centerY = canvas.height / 2;
+
+    // Пересчитываем радиусы в зависимости от размера экрана
+    baseRadius = Math.min(centerX, centerY) * 0.5;
+    baseDisplayingRadius = Math.min(centerX, centerY) * 0.7;
+    maxOffset = 13;
+
+    if (window.matchMedia('(max-width: 768px)').matches) {
+        baseRadius = Math.min(centerX, centerY) * 0.8;
+        baseDisplayingRadius = Math.min(centerX, centerY) * 0.9;
+        maxOffset = 8;
+    }
+
+    // Обновляем все существующие круги с новыми параметрами
+    circles.forEach((circle, i) => {
+        const newRadius = baseRadius + i * 4;
+        circle.baseRadius = newRadius;
+        circle.targetRadius = newRadius;
+        circle.currentRadius = newRadius;
+
+        // Обновляем максимальные смещения для всех точек деталей
+        for (let j = 0; j < circle.detail; j++) {
+            // Пересчитываем смещения пропорционально новому maxOffset
+            const normalizedOffset = circle.offsets[j] / (maxOffset === 8 ? 13 : 8); // обратное преобразование
+            circle.offsets[j] = normalizedOffset * maxOffset;
+
+            // Ограничиваем смещения новыми границами
+            if (circle.offsets[j] > maxOffset) circle.offsets[j] = maxOffset;
+            if (circle.offsets[j] < -maxOffset) circle.offsets[j] = -maxOffset;
+        }
+    });
+}
 
 class GlowingCircle {
     constructor(radius, offsetFactor, hue) {
@@ -117,7 +142,6 @@ class GlowingCircle {
 }
 
 function drawInnerContent(state, progress) {
-
     const innerRadiusBase = baseRadius * 0.8;
     const innerRadius = innerRadiusBase;
 
@@ -200,6 +224,10 @@ function drawInnerContent(state, progress) {
     ctx.shadowBlur = 0;
 }
 
+// Инициализация размеров и параметров
+resizeCanvas();
+
+// Создание кругов после инициализации параметров
 for (let i = 0; i < numCircles; i++) {
     const radius = baseRadius + i * 4;
     const offsetFactor = 1 + i * 0.08;
@@ -253,6 +281,7 @@ function animate() {
     pupilGlow.style.width = `${pupilSize}px`;
     pupilGlow.style.height = `${pupilSize}px`;
 }
+
 function setAIState(newState) {
     if (document.querySelector('.function-frame')) targetAIState = 'displaying'
     else {
@@ -287,9 +316,13 @@ function setAIState(newState) {
 
 animate();
 
-window.addEventListener('resize', () => {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    centerX = canvas.width / 2;
-    centerY = canvas.height / 2;
-});
+// Обработчики событий resize
+window.addEventListener('resize', resizeCanvas);
+// Дополнительно можно добавить обработчик для window.resize() если он используется в другом месте
+if (typeof window.resize === 'function') {
+    const originalResize = window.resize;
+    window.resize = function() {
+        originalResize.apply(this, arguments);
+        resizeCanvas();
+    };
+}
